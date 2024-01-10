@@ -1,10 +1,10 @@
 # Alpine Linux plus Golang
-ARG package_version
 ARG base_image
 ARG golang_image
-
 FROM ${golang_image} as golang
 FROM ${base_image}
+
+ARG package_version
 LABEL package_version="${package_version}"
 
 # copy required files to image

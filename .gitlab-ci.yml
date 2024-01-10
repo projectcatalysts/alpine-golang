@@ -1,0 +1,6 @@
+include:
+  project: 'procat/ci-scripts'
+  file: '.gitlab-common.yml'
+
+build:
+  extends: .gitlab-build

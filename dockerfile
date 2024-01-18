@@ -11,6 +11,7 @@ LABEL package_version="${package_version}"
 # https://stackoverflow.com/questions/52056387/how-to-install-go-in-alpine-linux
 COPY --from=golang /usr/local/go /usr/local/go
 COPY ./downloads/known_hosts /root
+COPY ./downloads/badger /usr/local/bin
 
 # environment
 ENV GOLANG_VERSION ${package_version}
@@ -27,5 +28,6 @@ RUN apk --no-cache add openssh git zip \
     # cleanup
     && rm /root/known_hosts \
     # final check
-    && go version
+    && go version \
+    && badger --version
 WORKDIR /src

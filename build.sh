@@ -24,6 +24,28 @@ function build_alpine_golang {
     # Copy files that can be utilised in the dockerfile to the container's download directory
     echo ${sshkey_gitlab_server} > ${EXEC_CI_SCRIPT_PATH}/downloads/known_hosts
 
+    # get the version of the latest badger release
+    local readonly badger_project_id=45
+    local badger_release_tag=$(gitlab_get_project_latest_release_tag ${GL_TOKEN} ${badger_project_id}) || return $?
+    pc_log "latest release tag                : badger/${badger_release_tag}"
+
+    # get the build job id associated with a release tag
+    local readonly build_job_name="build"
+    local badger_build_job_id=$(gitlab_get_release_build_job_id ${badger_project_id} "badger" ${badger_release_tag} ${build_job_name} ) || return $?
+
+    # Download the latest badger release
+    local readonly badger_version_without_v="${badger_release_tag:1}"
+    local readonly badger_file_name="badger-linux-amd64-${badger_version_without_v}.tar.gz"
+    local readonly badger_file_path="${EXEC_CI_SCRIPT_PATH}/downloads/${badger_file_name}"
+    local readonly badger_artifacts_uri=$(gitlab_project_uri ${badger_project_id} /jobs/${badger_build_job_id}/artifacts/bin) || return $?
+
+    pc_log "downloading badger                : ${_gitlab_api_url}${badger_artifacts_uri}/${badger_file_name}"
+    curl --header "PRIVATE-TOKEN: ${GL_TOKEN}" -o ${badger_file_path} -jksSL "${_gitlab_api_url}${badger_artifacts_uri}/${badger_file_name}"
+
+    # Extract the badger executable from the archive
+    pc_log "extracting badger from archive    : ${badger_file_path}"
+    tar -zxvf ${badger_file_path} -C "${EXEC_CI_SCRIPT_PATH}/downloads" badger
+
     local readonly alpine_version="3.19"
     local readonly golang_image="golang:${package_version}-alpine${alpine_version}"
     local readonly base_image="${PROCAT_CI_REGISTRY_SERVER}/procat/docker/alpine-bash:latest"
@@ -57,6 +79,12 @@ function build {
     #
     configure_ci_environment || return $?
 
+    # Use the GITLAB API
+    source "${PROCAT_CI_SCRIPTS_PATH}/api/gitlab.sh"
+
+    # Configure variables required by gitlab API
+    local _gitlab_api_url="$(gitlab_api_url ${PROCAT_CI_GIT_SERVER})"
+
     # For testing purposes, default the package name
 	if [ -z "${1-}" ]; then
         local package_name=${PROCAT_CI_REGISTRY_SERVER}/procat/docker/alpine-golang
@@ -83,6 +111,14 @@ function build {
 	else
 		local no_cache_flag=$([ "$3" == "--no-cache" ] && echo "true" || echo "false")
 	fi
+
+    # get the upstream branch
+    if [ -z "${CI_COMMIT_BRANCH-}" ]; then
+        local readonly upstream_branch="$(cut -d "/" -f2 <<< $(git rev-parse --abbrev-ref --symbolic-full-name @{u}))"
+    else
+        local readonly upstream_branch="${CI_COMMIT_BRANCH}"
+    fi
+    pc_log "upstream_branch                  : $upstream_branch"
 
     # Build the docker image
 	build_alpine_golang ${no_cache_flag} ${package_name} push ${package_version} latest

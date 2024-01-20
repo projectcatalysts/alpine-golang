@@ -24,7 +24,7 @@ function build_alpine_golang {
 
     # Copy files that can be utilised in the dockerfile to the container's download directory
     echo ${sshkey_gitlab_server} > ${EXEC_CI_SCRIPT_PATH}/downloads/known_hosts
-    echo ${sshkey_github_server} > ${EXEC_CI_SCRIPT_PATH}/downloads/known_hosts
+    echo ${sshkey_github_server} >> ${EXEC_CI_SCRIPT_PATH}/downloads/known_hosts
 
     # get the version of the latest badger release
     local readonly badger_project_id=45

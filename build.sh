@@ -17,14 +17,6 @@ function build_alpine_golang {
     # Remove any existing files from the container's download directory
     rm -f ${EXEC_CI_SCRIPT_PATH}/downloads/*
 
-    # awk is necessary to remove the comment line.
-    #  e.g.  # Host gitlab.example.com found: line 52
-    local readonly sshkey_gitlab_server=$(ssh-keygen -H -F ${PROCAT_CI_GIT_SERVER} | awk 'NR==2')
-
-    # Copy files that can be utilised in the dockerfile to the container's download directory
-    echo ${sshkey_gitlab_server} > ${EXEC_CI_SCRIPT_PATH}/downloads/known_hosts
-    echo ${GITHUB_SSH_HOST_PUBLIC_KEY} >> ${EXEC_CI_SCRIPT_PATH}/downloads/known_hosts
-
     # get the version of the latest badger release
     local readonly badger_project_id=45
     local badger_release_tag=$(gitlab_get_project_latest_release_tag ${GL_TOKEN} ${badger_project_id}) || return $?

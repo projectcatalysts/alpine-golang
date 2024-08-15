@@ -92,7 +92,7 @@ function build {
 
     # For testing purposes, default the package version
 	if [ -z "${2-}" ]; then
-        local package_version="1.21.6"
+        local package_version="1.23"
         pc_log "package_version (default)        : $package_version"
 	else
 		local package_version=${2}
